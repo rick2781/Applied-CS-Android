@@ -1,5 +1,6 @@
 package e.rick.scamesdice;
 
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -15,8 +16,11 @@ public class MainActivity extends AppCompatActivity {
     int overallUserScore = 0;
     int turnUserScore = 0;
 
-    int overllCPUScore = 0;
+    int overallCPUScore = 0;
     int turnCPUScore = 0;
+
+    boolean userTurn = true;
+    boolean cpuTurn = false;
 
     Random random = new Random();
 
@@ -34,31 +38,31 @@ public class MainActivity extends AppCompatActivity {
 
         Button rollButton = findViewById(R.id.rollButton);
 
-        final ImageView diceImage = findViewById(R.id.diceImage);
-
         rollButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                rollDiceUser();
-
-                changeScoreDisplay(turnUserScore);
+                rollDice();
             }
         });
     }
 
-    private void changeScoreDisplay(int currentTurnScore) {
+    private void changeScoreDisplay() {
 
         TextView scoreDisplay = findViewById(R.id.score);
 
-        String standardScore = "Your score: " + String.valueOf(overallUserScore) + " " + "Computer Score: " + String.valueOf(overllCPUScore);
+        String standardScore = "Your score: " + String.valueOf(overallUserScore) + " " + "Computer Score: " + String.valueOf(overallCPUScore);
         String turnScore = "Turn Score: ";
 
         scoreDisplay.setText(standardScore);
 
-        if (currentTurnScore != 0) {
+        if (userTurn) {
 
-            scoreDisplay.setText(standardScore + " " + turnScore + String.valueOf(currentTurnScore));
+            scoreDisplay.setText(standardScore + " " + turnScore + String.valueOf(turnUserScore));
+
+        } else if (cpuTurn) {
+
+            scoreDisplay.setText(standardScore + " " + turnScore + String.valueOf(turnCPUScore));
         }
     }
 
@@ -71,11 +75,11 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 overallUserScore = 0;
-                overllCPUScore = 0;
+                overallCPUScore = 0;
                 turnUserScore = 0;
                 turnCPUScore = 0;
 
-                changeScoreDisplay(0);
+                changeScoreDisplay();
             }
         });
     }
@@ -88,127 +92,144 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                if (overallUserScore == 0) {
-
-                    overallUserScore = turnUserScore;
-                } else {
-
-                    overallUserScore = overallUserScore + turnUserScore;
-                }
-
-                turnUserScore = 0;
-
-                changeScoreDisplay(turnUserScore);
+                holdFunctionality();
             }
         });
     }
 
-    private boolean computerTurn() {
+    private void holdFunctionality(){
 
-        while (turnCPUScore < 20) {
+        if (userTurn) {
 
-            rollDiceComputer();
+            if (overallUserScore == 0) {
+
+                overallUserScore = turnUserScore;
+
+            } else {
+
+                overallUserScore = overallUserScore + turnUserScore;
+            }
+
+            turnUserScore = 0;
+
+            computerTurn();
+
+        } else if (cpuTurn) {
+
+            if (overallCPUScore == 0) {
+
+                overallCPUScore = turnCPUScore;
+
+            } else {
+
+                overallCPUScore = overallCPUScore + turnCPUScore;
+            }
+
+            turnCPUScore = 0;
         }
 
-        if (overllCPUScore == 0) {
+        changeScoreDisplay();
+    }
 
-            overllCPUScore = turnCPUScore;
+    private void computerTurn() {
+
+        cpuTurn = true;
+        userTurn = false;
+
+        enableButton(false);
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                rollDice();
+            }
+        }, 1300);
+
+        cpuTurn = false;
+        userTurn = true;
+
+        enableButton(true);
+    }
+
+    private void rollDice() {
+
+        int randomValue = random.nextInt(6);
+
+        final ImageView diceImage = findViewById(R.id.diceImage);
+
+        int dice[] = { R.drawable.dice1, R.drawable.dice2, R.drawable.dice3, R.drawable.dice4, R.drawable.dice5, R.drawable.dice6};
+
+        diceImage.setImageResource(dice[randomValue]);
+
+        randomValue ++;
+
+        if (randomValue == 1) {
+
+            addTurnScore(0);
+
+            if (userTurn) {
+
+                computerTurn();
+
+            } else if (cpuTurn) {
+
+                cpuTurn = false;
+                userTurn = true;
+            }
 
         } else {
 
-            overllCPUScore = overllCPUScore + turnCPUScore;
+            addTurnScore(randomValue);
         }
-
-        turnCPUScore = 0;
-
-        changeScoreDisplay(turnCPUScore);
-
-        return false;
     }
 
-    private void rollDiceUser() {
+    private void addTurnScore(int value) {
 
-        Integer[] possibleValue = {1, 2, 3, 4, 5, 6};
+        if (value == 0) {
 
-        int randomValue = random.nextInt(possibleValue.length);
+            if (userTurn) {
 
-        final ImageView diceImage = findViewById(R.id.diceImage);
-
-        switch (possibleValue[randomValue]) {
-
-            case 1:
-                diceImage.setImageResource(R.drawable.dice1);
                 turnUserScore = 0;
 
-                computerTurn();
-                break;
+            } else if (cpuTurn) {
 
-            case 2:
-                diceImage.setImageResource(R.drawable.dice2);
-                turnUserScore = turnUserScore + 2;
-                break;
+                turnCPUScore = 0;
+            }
 
-            case 3:
-                diceImage.setImageResource(R.drawable.dice3);
-                turnUserScore = turnUserScore + 3;
-                break;
+        } else {
 
-            case 4:
-                diceImage.setImageResource(R.drawable.dice4);
-                turnUserScore = turnUserScore + 4;
-                break;
+            if (userTurn) {
 
-            case 5:
-                diceImage.setImageResource(R.drawable.dice5);
-                turnUserScore = turnUserScore + 5;
-                break;
+                turnUserScore += value;
 
-            case 6:
-                diceImage.setImageResource(R.drawable.dice6);
-                turnUserScore = turnUserScore + 6;
-                break;
+            } else if (cpuTurn) {
+
+                turnCPUScore += value;
+            }
         }
+
+        changeScoreDisplay();
     }
 
-    private void rollDiceComputer() {
+    private void enableButton(boolean enable) {
 
-        Integer[] possibleValue = {1, 2, 3, 4, 5, 6};
+        Button rollButton = findViewById(R.id.rollButton);
+        Button holdButton = findViewById(R.id.holdButton);
+        Button resetButton = findViewById(R.id.resetButton);
 
-        int randomValue = random.nextInt(possibleValue.length);
+        if (enable) {
 
-        final ImageView diceImage = findViewById(R.id.diceImage);
+            rollButton.setEnabled(true);
+            holdButton.setEnabled(true);
+            resetButton.setEnabled(true);
+        } else {
 
-        switch (possibleValue[randomValue]) {
-
-            case 1:
-                diceImage.setImageResource(R.drawable.dice1);
-                turnCPUScore = 0;
-                break;
-
-            case 2:
-                diceImage.setImageResource(R.drawable.dice2);
-                turnCPUScore = turnCPUScore + 2;
-                break;
-
-            case 3:
-                diceImage.setImageResource(R.drawable.dice3);
-                turnCPUScore = turnCPUScore + 3;
-                break;
-
-            case 4:
-                diceImage.setImageResource(R.drawable.dice4);
-                turnCPUScore = turnCPUScore + 4;
-                break;
-
-            case 5:
-                diceImage.setImageResource(R.drawable.dice5);
-                turnCPUScore = turnCPUScore + 5;
-                break;
-
-            case 6:
-                diceImage.setImageResource(R.drawable.dice6);
-                turnCPUScore = turnCPUScore + 6;
-                break;
+            rollButton.setEnabled(false);
+            holdButton.setEnabled(false);
+            resetButton.setEnabled(false);
         }
     }
 }
+
