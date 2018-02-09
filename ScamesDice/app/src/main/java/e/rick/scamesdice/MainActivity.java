@@ -26,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
     boolean userTurn;
     boolean cpuTurn;
 
+    Handler handler = new Handler();
+
     Random random = new Random();
 
     @Override
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void changeScoreDisplay() {
+    private void updateScoreDisplay() {
 
         TextView scoreDisplay = findViewById(R.id.score);
 
@@ -124,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
             turnCPUScore = 0;
         }
 
-        changeScoreDisplay();
+        updateScoreDisplay();
     }
 
     private void computerTurn() {
@@ -137,13 +139,12 @@ public class MainActivity extends AppCompatActivity {
             rollDice();
         }
 
-        Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
 
             @Override
             public void run() {
 
-                if (turnCPUScore < 20 && cpuTurn) {
+                if (turnCPUScore < 40 && cpuTurn) {
 
                     rollDice();
                 }
@@ -155,27 +156,59 @@ public class MainActivity extends AppCompatActivity {
                 enableButton(true);
             }
         }, 1300);
+
+        declareWinner();
     }
 
     private void rollDice() {
 
         declareWinner();
 
-        int randomValue = random.nextInt(6);
+        int randomValueDice1 = random.nextInt(6);
+        int randomValueDice2 = random.nextInt(6);
 
-        final ImageView diceImage = findViewById(R.id.dice1Image);
+        final ImageView dice1Image = findViewById(R.id.dice1Image);
+        final ImageView dice2Image = findViewById(R.id.dice2Image);
 
         int dice[] = {R.drawable.dice1, R.drawable.dice2, R.drawable.dice3, R.drawable.dice4, R.drawable.dice5, R.drawable.dice6};
 
-        diceImage.setImageResource(dice[randomValue]);
+        dice1Image.setImageResource(dice[randomValueDice1]);
+        dice2Image.setImageResource(dice[randomValueDice2]);
 
-        randomValue++;
+        randomValueDice1 ++;
+        randomValueDice2 ++;
 
-        Log.d(TAG, "rollDice: value - " + randomValue);
+        if (randomValueDice1 == 0 && randomValueDice2 == 0) {
 
-        if (randomValue == 1) {
+            if (userTurn) {
+
+                Toast.makeText(this, "You Rolled 1 Twice.\n You lost all your score.", Toast.LENGTH_SHORT).show();
+
+                turnUserScore = 0;
+                overallUserScore = 0;
+
+                updateScoreDisplay();
+
+                computerTurn();
+
+            } else if (cpuTurn) {
+
+                Toast.makeText(this, "CPU Rolled 1 twice.\n He lost all his score.", Toast.LENGTH_SHORT).show();
+
+                turnCPUScore = 0;
+                overallCPUScore = 0;
+
+                updateScoreDisplay();
+
+                isCpuTurn(false);
+            }
+        }
+
+        if (randomValueDice1 == 1 || randomValueDice2 == 1) {
 
             addTurnScore(0);
+
+            Log.d(TAG, "rollDice: dice == 1 executed");
 
             if (userTurn) {
 
@@ -191,13 +224,34 @@ public class MainActivity extends AppCompatActivity {
                 isCpuTurn(false);
             }
 
+        } else if (randomValueDice1 == randomValueDice2) {
+
+            addTurnScore(randomValueDice1 + randomValueDice2);
+
+            enableButton(false);
+
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    rollDice();
+                    enableButton(true);
+                }
+            }, 1000);
+
         } else {
 
-            addTurnScore(randomValue);
+            Log.d(TAG, "rollDice: regular dice executed");
+
+            addTurnScore(randomValueDice1 + randomValueDice2);
+
+            Log.d(TAG, "rollDice value1: " + randomValueDice1 + "value 2: " + randomValueDice2);
         }
     }
 
     private void addTurnScore(int value) {
+
+        Log.d(TAG, "addTurnScore: value " + value);
 
         if (userTurn) {
 
@@ -208,6 +262,8 @@ public class MainActivity extends AppCompatActivity {
             } else {
 
                 turnUserScore += value;
+
+                Log.d(TAG, "addTurnScore: userScore: " + turnUserScore);
             }
 
         } else if (cpuTurn) {
@@ -222,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        changeScoreDisplay();
+        updateScoreDisplay();
     }
 
     private void enableButton(boolean enable) {
@@ -266,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
         turnUserScore = 0;
         turnCPUScore = 0;
 
-        changeScoreDisplay();
+        updateScoreDisplay();
     }
 
     private void declareWinner() {
