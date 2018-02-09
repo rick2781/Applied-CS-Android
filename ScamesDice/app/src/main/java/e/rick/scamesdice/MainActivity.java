@@ -3,15 +3,19 @@ package e.rick.scamesdice;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
 
     int overallUserScore = 0;
     int turnUserScore = 0;
@@ -19,8 +23,8 @@ public class MainActivity extends AppCompatActivity {
     int overallCPUScore = 0;
     int turnCPUScore = 0;
 
-    boolean userTurn = true;
-    boolean cpuTurn = false;
+    boolean userTurn;
+    boolean cpuTurn;
 
     Random random = new Random();
 
@@ -28,6 +32,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        userTurn = true;
+        cpuTurn = false;
 
         rollDiceButton();
         resetButton();
@@ -41,6 +48,11 @@ public class MainActivity extends AppCompatActivity {
         rollButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+                if (userTurn) {
+
+                    Log.d(TAG, "onClick: userturn");
+                }
 
                 rollDice();
             }
@@ -74,12 +86,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                overallUserScore = 0;
-                overallCPUScore = 0;
-                turnUserScore = 0;
-                turnCPUScore = 0;
-
-                changeScoreDisplay();
+                resetFunctionality();
             }
         });
     }
@@ -93,37 +100,26 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 holdFunctionality();
+
+                if (userTurn) {
+
+                    computerTurn();
+                }
             }
         });
     }
 
-    private void holdFunctionality(){
+    private void holdFunctionality() {
 
         if (userTurn) {
 
-            if (overallUserScore == 0) {
-
-                overallUserScore = turnUserScore;
-
-            } else {
-
-                overallUserScore = overallUserScore + turnUserScore;
-            }
+            overallUserScore = overallUserScore + turnUserScore;
 
             turnUserScore = 0;
 
-            computerTurn();
-
         } else if (cpuTurn) {
 
-            if (overallCPUScore == 0) {
-
-                overallCPUScore = turnCPUScore;
-
-            } else {
-
-                overallCPUScore = overallCPUScore + turnCPUScore;
-            }
+            overallCPUScore = overallCPUScore + turnCPUScore;
 
             turnCPUScore = 0;
         }
@@ -133,37 +129,49 @@ public class MainActivity extends AppCompatActivity {
 
     private void computerTurn() {
 
-        cpuTurn = true;
-        userTurn = false;
+        isCpuTurn(true);
 
         enableButton(false);
 
+        if (cpuTurn) {
+            rollDice();
+        }
+
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
+
             @Override
             public void run() {
 
-                rollDice();
+                if (turnCPUScore < 20 && cpuTurn) {
+
+                    rollDice();
+                }
+
+                holdFunctionality();
+
+                isCpuTurn(false);
+
+                enableButton(true);
             }
         }, 1300);
-
-        cpuTurn = false;
-        userTurn = true;
-
-        enableButton(true);
     }
 
     private void rollDice() {
 
+        declareWinner();
+
         int randomValue = random.nextInt(6);
 
-        final ImageView diceImage = findViewById(R.id.diceImage);
+        final ImageView diceImage = findViewById(R.id.dice1Image);
 
-        int dice[] = { R.drawable.dice1, R.drawable.dice2, R.drawable.dice3, R.drawable.dice4, R.drawable.dice5, R.drawable.dice6};
+        int dice[] = {R.drawable.dice1, R.drawable.dice2, R.drawable.dice3, R.drawable.dice4, R.drawable.dice5, R.drawable.dice6};
 
         diceImage.setImageResource(dice[randomValue]);
 
-        randomValue ++;
+        randomValue++;
+
+        Log.d(TAG, "rollDice: value - " + randomValue);
 
         if (randomValue == 1) {
 
@@ -171,12 +179,16 @@ public class MainActivity extends AppCompatActivity {
 
             if (userTurn) {
 
+                Toast.makeText(this, "User Rolled 1", Toast.LENGTH_SHORT).show();
+
+                holdFunctionality();
                 computerTurn();
 
             } else if (cpuTurn) {
 
-                cpuTurn = false;
-                userTurn = true;
+                Toast.makeText(this, "CPU Rolled 1", Toast.LENGTH_SHORT).show();
+
+                isCpuTurn(false);
             }
 
         } else {
@@ -187,24 +199,24 @@ public class MainActivity extends AppCompatActivity {
 
     private void addTurnScore(int value) {
 
-        if (value == 0) {
+        if (userTurn) {
 
-            if (userTurn) {
+            if (value == 0) {
 
                 turnUserScore = 0;
 
-            } else if (cpuTurn) {
-
-                turnCPUScore = 0;
-            }
-
-        } else {
-
-            if (userTurn) {
+            } else {
 
                 turnUserScore += value;
+            }
 
-            } else if (cpuTurn) {
+        } else if (cpuTurn) {
+
+            if (value == 0) {
+
+                turnCPUScore = 0;
+
+            } else {
 
                 turnCPUScore += value;
             }
@@ -224,11 +236,52 @@ public class MainActivity extends AppCompatActivity {
             rollButton.setEnabled(true);
             holdButton.setEnabled(true);
             resetButton.setEnabled(true);
+
         } else {
 
             rollButton.setEnabled(false);
             holdButton.setEnabled(false);
             resetButton.setEnabled(false);
+        }
+    }
+
+    private void isCpuTurn(boolean turn) {
+
+        if (turn) {
+
+            cpuTurn = true;
+            userTurn = false;
+
+        } else {
+
+            cpuTurn = false;
+            userTurn = true;
+        }
+    }
+
+    private void resetFunctionality() {
+
+        overallUserScore = 0;
+        overallCPUScore = 0;
+        turnUserScore = 0;
+        turnCPUScore = 0;
+
+        changeScoreDisplay();
+    }
+
+    private void declareWinner() {
+
+        if (overallCPUScore >= 100) {
+
+            Toast.makeText(this, "You lost!\n  CPU won!", Toast.LENGTH_SHORT).show();
+
+            recreate();
+
+        } else if (overallUserScore >= 100) {
+
+            Toast.makeText(this, "Congratulations! \n You won!", Toast.LENGTH_SHORT).show();
+
+            recreate();
         }
     }
 }
